@@ -75,7 +75,7 @@ The model is fitted using **train** from the **caret** library with the followin
     * **number** : number of cross-validation groups. This may also be an explicit list of integers that define the cross-validation groups.
 
 ```{r train_model, warning=FALSE, message=FALSE}
-#creat a tune grid
+#creat a tune grid.
 grid <-  expand.grid(cp=c(1:10)*0.01)
 
 #fit the classification model
