@@ -1,11 +1,13 @@
 ---
-title: "prediction_assignment.Rmd"
+title: "Practical Machine Learning"
 author: "Noel Namai"
 date: "Sunday, July 20, 2014"
 output: html_document
 ---
 
-Function to read data:
+### Data Collection:
+
+First a function to read data from respective CSV file. It keeps the header and replaces all "NA", "" and "#DIV/0!" with "NA"
 
 ```{r}
 readData <- function(file) {
@@ -16,52 +18,77 @@ readData <- function(file) {
     }
 ```
 
-Function to clean data:
+Then the data is read using the read **readData** function:
+
+```{r}
+data <- readData("./data/training.csv") #read data
+```
+
+### Data Cleaning:
+
+Then the function **cleanData** will be used to clean data. This function turns the variable **new_window** from "yes" or "no" into "1" or "0" respectively. It converts the variable **cvtd_timestamp** into a time object and splits it into **year, month, weekday, hour** and **minute** variables.
+
+Then all the columns with the most "NA" are droped from the dataframe. Columns **X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp** are also droped.
 
 ```{r}
 cleanData <- function(df) {    
-    df$new_window <- ifelse(df$new_window=="yes", "1", "0")
-    df$cvtd_timestamp <- strptime(df$cvtd_timestamp, "%d/%m/%Y %H:%M")
-    df$year <- as.numeric(strftime(df$cvtd_timestamp, "%Y"))
-    df$month <- as.numeric(strftime(df$cvtd_timestamp, "%m"))
-    df$weekday <- as.numeric(strftime(df$cvtd_timestamp, "%d"))
-    df$hour <- as.numeric(strftime(df$cvtd_timestamp, "%H"))
-    df$minute <- as.numeric(strftime(df$cvtd_timestamp, "%M"))
-    df <- df[,colSums(is.na(df)) < 1]
-    df$cvtd_timestamp <- as.character(df$cvtd_timestamp)
-    df <- subset(df, select=-c(X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp))
+    df$new_window <- ifelse(df$new_window=="yes", "1", "0") #convert new_window into "0" or "1"
+    df$cvtd_timestamp <- strptime(df$cvtd_timestamp, "%d/%m/%Y %H:%M") #convert cvtd_timestamp into a time object
+    df$year <- as.numeric(strftime(df$cvtd_timestamp, "%Y")) #creat a new feature year
+    df$month <- as.numeric(strftime(df$cvtd_timestamp, "%m")) #creat a new feature month
+    df$weekday <- as.numeric(strftime(df$cvtd_timestamp, "%d")) #creat a new feature weekday
+    df$hour <- as.numeric(strftime(df$cvtd_timestamp, "%H")) #creat a new feature hour
+    df$minute <- as.numeric(strftime(df$cvtd_timestamp, "%M")) #creat a new feature minute
+    df <- df[,colSums(is.na(df)) < 1] #drop columns with the most "NA"
+    df <- subset(df, select=-c(X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp)) #drop noisy features 
     }
 ```
 
-Read training and testing data:
+Then the data is cleaned using the **cleanData** function:
 
 ```{r}
-training <- readData("./data/training.csv")
-testing <- readData("./data/testing.csv")
+data <- cleanData(data) #clean data
 ```
 
-Clean data:
+### Training:
 
-```{r}
-training <- cleanData(training)
-testing <- cleanData(testing)
+The function **createDataPartition** can be used to create a stratified random sample of the data into **training** and **validation** sets with **70%** of the data in the **training** set and the rest in the **validation** set:
+
+```{r, warning=FALSE, message=FALSE}
+library(caret)
+set.seed(1)
+inTrain <- createDataPartition(y=data$classe, p=0.7, list=FALSE)
+training <- data[inTrain,] #create training set
+testing <- data[-inTrain,] #create validation set
 ```
+
+The model is fitted using **train** from the **caret** library with the following parameters:
+
+* **method** : argument specifies the type of training model.
+
+* **tuneGrid** : a data frame with columns for each tuning parameter.
+
+* **trControl** :  used to specifiy the type of resampling.
+
+    * **method** : the resampling method to be used.
+
+    * **number** : number of cross-validation groups. This may also be an explicit list of integers that define the cross-validation groups.
 
 ```{r train_model, warning=FALSE, message=FALSE}
-library(rpart)
-set.seed(1)
-fit <- rpart(classe~., data=training, method="class", control=rpart.control(minsplit=30, cp=0.01, xval=10))
+#creat a tune grid
+grid <-  expand.grid(cp=c(1:10)*0.01)
+
+#fit the classification model
+fit <- train(classe ~ ., data=training,
+             method="rpart",
+             tuneGrid=grid,
+             trControl=trainControl(method="cv", number=10))
+
+fit
+plot(fit)
 ```
 
-```{r}
-printcp(fit)
-```
-
-```{r}
-plotcp(fit)
-```
-
-```{r, warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=5}
 library(rattle)
-fancyRpartPlot(fit)
+fancyRpartPlot(fit$finalModel)
 ```
