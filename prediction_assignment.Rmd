@@ -50,12 +50,28 @@ Then the data is cleaned using the **cleanData** function:
 data <- cleanData(data) #clean data
 ```
 
+### Data Exploration:
+
+I used the **featurePlot** function to visualize the data. Here is an example of feature plots for the **first 10** features in the data set:
+
+```{r, warning=FALSE, message=FALSE}
+library(caret)
+featurePlot(x=data[,1:10],
+            y=data$classe,
+            plot="density",
+            scales=list(x=list(relation="free"),
+                        y=list(relation="free")),
+            adjust=1.5,
+            pch="|",
+            layout=c(5,2),
+            auto.key=list(columns=3))
+```
+
 ### Training:
 
 The function **createDataPartition** can be used to create a stratified random sample of the data into **training** and **validation** sets with **70%** of the data in the **training** set and the rest in the **validation** set:
 
 ```{r, warning=FALSE, message=FALSE}
-library(caret)
 set.seed(1)
 inTrain <- createDataPartition(y=data$classe, p=0.7, list=FALSE)
 training <- data[inTrain,] #create training set
