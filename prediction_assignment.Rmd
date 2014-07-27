@@ -8,44 +8,60 @@ output: html_document
 Function to read data:
 
 ```{r}
-readData <- function(file){
-    data <- read.csv(file,
-                     header=TRUE,
-                     na.strings = c("NA", ""),
-                     stringsAsFactors=FALSE,
-                     sep=",")
-    data
+readData <- function(file) {
+    df <- read.csv(file,
+                   header=TRUE, 
+                   na.strings=c("NA", "", "#DIV/0!"), 
+                   sep=",")
     }
 ```
 
 Function to clean data:
 
 ```{r}
-cleanData <- function(df){
-    df <- df[,-1]
-    df[is.na(df)] <- 0
-    df$cvtd_timestamp <- strptime(df$cvtd_timestamp, "%m/%d/%Y %H:%M")
-    df$weekday <- weekdays(df$cvtd_timestamp)
-    df$month <- months(df$cvtd_timestamp)
-    df$time <- format.Date(df$cvtd_timestamp, format="%H")
-    df$ampm <- format.Date(df$cvtd_timestamp, format="%p")
-    df
+cleanData <- function(df) {    
+    df$new_window <- ifelse(df$new_window=="yes", "1", "0")
+    df$cvtd_timestamp <- strptime(df$cvtd_timestamp, "%d/%m/%Y %H:%M")
+    df$year <- as.numeric(strftime(df$cvtd_timestamp, "%Y"))
+    df$month <- as.numeric(strftime(df$cvtd_timestamp, "%m"))
+    df$weekday <- as.numeric(strftime(df$cvtd_timestamp, "%d"))
+    df$hour <- as.numeric(strftime(df$cvtd_timestamp, "%H"))
+    df$minute <- as.numeric(strftime(df$cvtd_timestamp, "%M"))
+    df <- df[,colSums(is.na(df)) < 1]
+    df$cvtd_timestamp <- as.character(df$cvtd_timestamp)
+    df <- subset(df, select=-c(X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp))
     }
 ```
 
-Read training data:
+Read training and testing data:
 
 ```{r}
 training <- readData("./data/training.csv")
+testing <- readData("./data/testing.csv")
 ```
 
 Clean data:
 
 ```{r}
 training <- cleanData(training)
+testing <- cleanData(testing)
+```
+
+```{r train_model, warning=FALSE, message=FALSE}
+library(rpart)
+set.seed(1)
+fit <- rpart(classe~., data=training, method="class", control=rpart.control(minsplit=30, cp=0.01, xval=10))
 ```
 
 ```{r}
-head(training)
-#sapply(training, class)
+printcp(fit)
+```
+
+```{r}
+plotcp(fit)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+library(rattle)
+fancyRpartPlot(fit)
 ```
