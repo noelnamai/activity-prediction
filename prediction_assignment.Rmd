@@ -1,7 +1,7 @@
 ---
 title: "Practical Machine Learning"
 author: "Noel Namai"
-date: "Sunday, July 20, 2014"
+date: "Sunday, July 27, 2014"
 output: html_document
 ---
 
@@ -99,12 +99,39 @@ fit <- train(classe ~ ., data=training,
              method="rpart",
              tuneGrid=grid,
              trControl=trainControl(method="cv", number=10))
+```
 
+### Cross-Validation:
+
+The training set ids **resampled** in the trainig step above using **Cross-Validated (10 fold)**. The cross-validation results are given below:
+
+From this model, I expect **Out of Sample Error** to be approximately **0.3** from the information below:
+
+```{r}
 fit
 plot(fit)
 ```
 
+This is a visualisation for the "classification" tree produced by the model:
+
 ```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=5}
 library(rattle)
 fancyRpartPlot(fit$finalModel)
+```
+
+### Predicting:
+
+Using the model developed, I predict using the variable **classe**
+
+```{r}
+testPred <- predict(fit, testing)
+```
+
+From the **Confusion Matrix** we can calculate our **Out of Sample Error** as **24.84%**:
+
+    Out of Sample Error = 1 - 0.7516
+                        = 0.2484
+
+```{r}
+confusionMatrix(testPred, testing$classe)
 ```
