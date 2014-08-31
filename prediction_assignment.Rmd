@@ -2,7 +2,7 @@
 title: "Practical Machine Learning"
 author: "Noel Namai"
 date: "Sunday, July 27, 2014"
-output: html_document
+output: pdf_document
 ---
 
 ### Data Collection:
